@@ -8,16 +8,7 @@ AgriTrack is a farm management system that helps farmers and cooperatives manage
 - **Resource Management:** CRUD operations for farming resources like seeds, fertilizers, etc.
 - **Activity Tracking:** Log farming activities (planting, irrigation, harvesting) linked to crops.
 - **Dashboard:** Displays crop stats, upcoming tasks, and growth progress.
-- **Validation:** Ensures input correctness for crops, resources, and activities.
-- **API Endpoints:** RESTful API for handling resources, crops, and activities.
 
-## Requirements
-
-- Python 3.8+
-- Django 4.x
-- PostgreSQL (or preferred database)
-- Django REST Framework
-- Docker (optional, for containerized deployment)
 
 ## Installation
 
