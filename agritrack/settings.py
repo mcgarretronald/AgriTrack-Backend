@@ -33,7 +33,7 @@ SECRET_KEY = os.getenv('SECRET_KEY') or 'secret'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['agritrack-backend.onrender.com']
 
 
 AUTH_USER_MODEL = "users.User"
