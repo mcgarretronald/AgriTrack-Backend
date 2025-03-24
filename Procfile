@@ -1,1 +1,1 @@
-web: gunicorn agritrack.wsgi
+web: gunicorn agritrack.wsgi:application
