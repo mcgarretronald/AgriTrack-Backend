@@ -33,7 +33,7 @@ SECRET_KEY = os.getenv('SECRET_KEY') or 'secret'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['agritrack-backend.onrender.com']
+ALLOWED_HOSTS = ['agritrack-backend.onrender.com','127.0.0.1']
 
 
 AUTH_USER_MODEL = "users.User"
@@ -114,12 +114,12 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-import os
-
 DATABASES = {
-    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"))
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": "mydatabase",
+    }
 }
-
 
 
 # Password validation
