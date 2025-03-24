@@ -18,20 +18,20 @@ class RegisterUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
     def create(self, request, *args, **kwargs):
+        email = request.data.get("email")
+        username = request.data.get("username")
+
+        # Explicitly check for existing email and username
+        if User.objects.filter(email=email).exists():
+            return Response({"error": "An account with this email already exists. Try logging in."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(username=username).exists():
+            return Response({"error": "This username is already taken. Try a different one or log in."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             return super().create(request, *args, **kwargs)
         except ValidationError as e:
-            errors = e.detail  # Extract the validation errors
-
-            # Custom error messages for email and username uniqueness
-            formatted_errors = {}
-            if "username" in errors:
-                formatted_errors["error"] = "This username is already taken. Try a different one or log in."
-            if "email" in errors:
-                formatted_errors["error"] = "An account with this email already exists. Try logging in."
-
-            return Response(formatted_errors, status=status.HTTP_400_BAD_REQUEST)
-
+            return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
         except IntegrityError:
             return Response(
                 {"error": "An account with this email or username already exists. Try logging in."},
@@ -39,9 +39,10 @@ class RegisterUserView(generics.CreateAPIView):
             )
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        
 class LoginUserView(APIView):
-    """User login using email or username with password verification"""
+    """User login using either email or username with password verification"""
 
     def post(self, request):
         identifier = request.data.get("identifier")  # Can be email or username
@@ -53,18 +54,20 @@ class LoginUserView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Find user by email or username
-        user = User.objects.filter(email__iexact=identifier).first() if "@" in identifier else User.objects.filter(username__iexact=identifier).first()
+        # Find the user by email or username
+        user = User.objects.filter(email__iexact=identifier).first() or \
+               User.objects.filter(username__iexact=identifier).first()
+
         if not user:
             return Response({"error": "No account found with this email or username."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Authenticate user
-        user = authenticate(email=user.email, password=password)
+        # Authenticate using email (since email is the USERNAME_FIELD)
+        user = authenticate(request, username=user.email, password=password)  # 🔹 Fix: Use `email`
         if not user:
             return Response({"error": "Incorrect password. Please try again."}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            {"success": "Login successful", "user_id": user.id}, 
+            {"success": "Login successful", "user_id": user.id, "username": user.username, "email": user.email}, 
             status=status.HTTP_200_OK
         )
 
@@ -75,14 +78,25 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
 
     def get_object(self):
-        user_id = self.kwargs.get("id")  # Get ID from URL
+        """Get user profile based on the provided ID"""
+        user_id = self.kwargs.get("id")
         return get_object_or_404(User, id=user_id)
 
     def update(self, request, *args, **kwargs):
-        # Restrict updating certain fields like `is_staff`
-        protected_fields = ["is_staff", "is_superuser", "password"]
-        for field in protected_fields:
-            if field in request.data:
-                return Response({"error": f"You cannot update the {field} field."}, status=status.HTTP_400_BAD_REQUEST)
+        """Restrict updates to protected fields and ensure valid data"""
+        protected_fields = {"is_staff", "is_superuser", "password"}
+        data = request.data.copy()
 
-        return super().update(request, *args, **kwargs)
+        # Remove protected fields from request data
+        for field in protected_fields:
+            if field in data:
+                return Response({"error": f"Updating {field} is not allowed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = self.get_object()
+
+        serializer = self.get_serializer(user, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid data", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
