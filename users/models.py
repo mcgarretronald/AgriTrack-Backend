@@ -53,8 +53,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
-
+ 
     def save(self, *args, **kwargs):
-        if not self.id:  # Generate a unique ID only if it doesn't exist
-            self.id = User.objects.generate_unique_user_id()  
+        if not self.id:
+            self.id = User.objects.generate_unique_user_id()  # ✅ Correct
         super().save(*args, **kwargs)
